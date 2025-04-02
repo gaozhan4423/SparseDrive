@@ -119,6 +119,7 @@ def main():
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
+    # 如果cfg_options被修改了，那么会将修改值合并到cfg中
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
     # import modules from string list.
@@ -128,6 +129,7 @@ def main():
         import_modules_from_strings(**cfg["custom_imports"])
 
     # import modules from plguin/xx, registry will be updated
+    # 检查cfg对象中是否有plugin属性，然后再检查该属性的值是否为True
     if hasattr(cfg, "plugin"):
         if cfg.plugin:
             import importlib
