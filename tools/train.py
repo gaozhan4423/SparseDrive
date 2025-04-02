@@ -284,7 +284,16 @@ def main():
     cfg.data.val.work_dir = cfg.work_dir
     datasets = [build_dataset(cfg.data.train)]
 
+    # 检查工作流配置长度是否为2，如果是的话意味着训练+验证（即有验证集）
+    '''
+    # 只有训练阶段
+    workflow = [('train', 1)]  # 长度为1
+
+    # 训练和验证阶段, 每训练1个epoch就验证1次
+    workflow = [('train', 1), ('val', 1)]  # 长度为2
+    '''
     if len(cfg.workflow) == 2:
+        # 深度复制cfg.data.val配置
         val_dataset = copy.deepcopy(cfg.data.val)
         # in case we use a dataset wrapper
         if "dataset" in cfg.data.train:
@@ -294,8 +303,10 @@ def main():
         # set test_mode=False here in deep copied config
         # which do not affect AP/AR calculation later
         # refer to https://mmdetection3d.readthedocs.io/en/latest/tutorials/customize_runtime.html#customize-workflow  # noqa
+        # 设置验证集的test_mode为False, 则不会加载标注数据
         val_dataset.test_mode = False
         datasets.append(build_dataset(val_dataset))
+    # 检查是否有检查点配置
     if cfg.checkpoint_config is not None:
         # save mmdet version, config file content and class names in
         # checkpoints as meta data
@@ -305,7 +316,9 @@ def main():
             CLASSES=datasets[0].CLASSES,
         )
     # add an attribute for visualization convenience
+    # 将数据集的类别名称添加到模型中
     model.CLASSES = datasets[0].CLASSES
+    # 检查cfg中是否有plugin属性，有的话则用custom_train_model函数(包含特定插件的自定义训练逻辑)训练模型
     if hasattr(cfg, "plugin"):
         custom_train_model(
             model,
