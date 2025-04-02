@@ -135,15 +135,16 @@ def main():
             import importlib
 
             if hasattr(cfg, "plugin_dir"):
-                plugin_dir = cfg.plugin_dir
-                _module_dir = os.path.dirname(plugin_dir)
-                _module_dir = _module_dir.split("/")
-                _module_path = _module_dir[0]
+                plugin_dir = cfg.plugin_dir # "projects/mmdet3d_plugin/"
+                _module_dir = os.path.dirname(plugin_dir) # projects/mmdet3d_plugin
+                _module_dir = _module_dir.split("/") # ["projects", "mmdet3d_plugin"]
+                _module_path = _module_dir[0]  # 结果是 "projects"
 
                 for m in _module_dir[1:]:
                     _module_path = _module_path + "." + m
+                # 结果是_module_path = "projects.mmdet3d_plugin"
                 print(_module_path)
-                plg_lib = importlib.import_module(_module_path)
+                plg_lib = importlib.import_module(_module_path) # plugin library导入
             else:
                 # import dir is the dirpath for the config file
                 _module_dir = os.path.dirname(args.config)
@@ -169,18 +170,25 @@ def main():
             "./work_dirs", osp.splitext(osp.basename(args.config))[0]
         )
     if args.resume_from is not None:
+        # 如果恢复路径不为空的话，则将cfg.resume_from设置为args.resume_from
         cfg.resume_from = args.resume_from
     if args.gpu_ids is not None:
+        # 如果指定了使用的gpu_ids（如[0,1,3], 则将cfg.gpu_ids设置为args.gpu_ids
         cfg.gpu_ids = args.gpu_ids
     else:
+        # 如果没有指定gpu_ids, 则执行以下三元判断式，先判断args.gpus是否为None
+        # 如果args.gpus不为None，则将cfg.gpu_ids设置为range(args.gpus),否则默认为range(1)即[0]
         cfg.gpu_ids = range(1) if args.gpus is None else range(args.gpus)
 
     if args.autoscale_lr:
+        # 检查是否启用了自动缩放学习率的选项
         # apply the linear scaling rule (https://arxiv.org/abs/1706.02677)
+        # 根据论文中的线性缩放原则，当批量增大时，学习率也要增大
         cfg.optimizer["lr"] = cfg.optimizer["lr"] * len(cfg.gpu_ids) / 8
 
     # init distributed env first, since logger depends on the dist info.
     if args.launcher == "none":
+        # 不使用分布式训练，在单个进程中运行
         distributed = False
     elif args.launcher == "mpi_nccl":
         distributed = True
@@ -213,14 +221,15 @@ def main():
         print("cfg.gpu_ids:", cfg.gpu_ids)
     else:
         distributed = True
+        # dist_params = dict(backend="nccl")，即使用NVIDIA NCCL作为后端
         init_dist(
-            args.launcher, timeout=timedelta(seconds=3600), **cfg.dist_params
+            args.launcher, timeout=timedelta(seconds=3600), **cfg.dist_params 
         )
         # re-set gpu_ids with distributed training mode
-        _, world_size = get_dist_info()
+        _, world_size = get_dist_info()# 获得分布式环境中的总进程数（world_size）
         cfg.gpu_ids = range(world_size)
 
-    # create work_dir
+    # 创建工作目录
     mmcv.mkdir_or_exist(osp.abspath(cfg.work_dir))
     # dump config
     cfg.dump(osp.join(cfg.work_dir, osp.basename(args.config)))
