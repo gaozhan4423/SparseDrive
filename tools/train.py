@@ -243,11 +243,11 @@ def main():
         log_file=log_file, log_level=cfg.log_level
     )
 
-    # init the meta dict to record some important information such as
-    # environment info and seed, which will be logged
+    # 初始化meta字典来记录重要信息，如环境信息和种子，这些将被记录到日志中
     meta = dict()
-    # log env info
+    # 记录环境信息
     env_info_dict = collect_env()
+    # 用列表推导式格式化环境信息得到列表，然后用换行符连接成字符串
     env_info = "\n".join([(f"{k}: {v}") for k, v in env_info_dict.items()])
     dash_line = "-" * 60 + "\n"
     logger.info(
@@ -266,15 +266,18 @@ def main():
             f"Set random seed to {args.seed}, "
             f"deterministic: {args.deterministic}"
         )
+        # 如果设置了随机种子并且使用确定性选项，则设置随机种子
         set_random_seed(args.seed, deterministic=args.deterministic)
     cfg.seed = args.seed
     meta["seed"] = args.seed
+    # 记录实验名称
     meta["exp_name"] = osp.basename(args.config)
 
+    # 构建检查器
     model = build_detector(
         cfg.model, train_cfg=cfg.get("train_cfg"), test_cfg=cfg.get("test_cfg")
     )
-    model.init_weights()
+    model.init_weights() # 初始化模型权重
     logger.info(f"Model:\n{model}")
 
     cfg.data.train.work_dir = cfg.work_dir
